@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Driver {
+  id            String          @id @default(uuid())
+  phone         String          @unique
+  name          String?
+  status        DriverStatus    @default(PENDING)
+  documents     Document[]
+  attendances   Attendance[]
+  geofences     DriverGeofence[]
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+}
+
+model Document {
+  id          String        @id @default(uuid())
+  type        DocumentType
+  url         String
+  status      DocumentStatus @default(PENDING)
+  driverId    String
+  driver      Driver        @relation(fields: [driverId], references: [id])
+  rejectionReason String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+}
+
+model Geofence {
+  id          String          @id @default(uuid())
+  name        String
+  coordinates Json            // Array of lat/lng points
+  drivers     DriverGeofence[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+model DriverGeofence {
+  id          String    @id @default(uuid())
+  driverId    String
+  geofenceId  String
+  driver      Driver    @relation(fields: [driverId], references: [id])
+  geofence    Geofence  @relation(fields: [geofenceId], references: [id])
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@unique([driverId, geofenceId])
+}
+
+model Attendance {
+  id          String    @id @default(uuid())
+  driverId    String
+  driver      Driver    @relation(fields: [driverId], references: [id])
+  checkIn     DateTime
+  checkOut    DateTime?
+  geofenceId  String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+enum DriverStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  INACTIVE
+}
+
+enum DocumentType {
+  PAN_CARD
+  AADHAR_CARD
+  DRIVING_LICENSE
+  SCHOOL_CERTIFICATE
+  POLICE_VERIFICATION
+}
+
+enum DocumentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
